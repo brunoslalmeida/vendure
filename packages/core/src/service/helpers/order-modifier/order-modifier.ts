@@ -665,6 +665,7 @@ export class OrderModifier {
     }
 
     async setShippingMethods(ctx: RequestContext, order: Order, shippingMethodIds: ID[]) {
+        //TODO Check HERE
         for (const [i, shippingMethodId] of shippingMethodIds.entries()) {
             const shippingMethod = await this.shippingCalculator.getMethodIfEligible(
                 ctx,

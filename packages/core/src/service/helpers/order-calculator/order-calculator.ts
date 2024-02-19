@@ -322,7 +322,21 @@ export class OrderCalculator {
             }
             const currentMethodStillEligible = await currentShippingMethod.test(ctx, order);
             if (currentMethodStillEligible) {
+                //TODO CHECK HERE
                 const result = await currentShippingMethod.apply(ctx, order);
+                if (Array.isArray(result)) {
+                    const test = result[0];
+                    shippingLine.listPrice = test.price;
+                    shippingLine.listPriceIncludesTax = test.priceIncludesTax;
+                    shippingLine.taxLines = [
+                        {
+                            description: 'shipping tax',
+                            taxRate: test.taxRate,
+                        },
+                    ];
+                    continue
+                };
+
                 if (result) {
                     shippingLine.listPrice = result.price;
                     shippingLine.listPriceIncludesTax = result.priceIncludesTax;

@@ -87,6 +87,14 @@ export const TEST_SHIPPING_METHOD = gql`
                 priceWithTax
                 metadata
             }
+            list {
+                eligible
+                quote {
+                    price
+                    priceWithTax
+                    metadata
+                }
+            }
         }
     }
 `;

@@ -9,6 +9,7 @@ import { LocaleString, Translatable, Translation } from '../../common/types/loca
 import { getConfig } from '../../config/config-helpers';
 import { HasCustomFields } from '../../config/custom-field/custom-field-types';
 import {
+    CalculateShippingFnResult,
     ShippingCalculationResult,
     ShippingCalculator,
 } from '../../config/shipping-method/shipping-calculator';
@@ -72,18 +73,26 @@ export class ShippingMethod
     @Column(type => CustomShippingMethodFields)
     customFields: CustomShippingMethodFields;
 
-    async apply(ctx: RequestContext, order: Order): Promise<ShippingCalculationResult | undefined> {
+    async apply(ctx: RequestContext, order: Order): Promise<ShippingCalculationResult | ShippingCalculationResult[] | undefined> {
         const calculator = this.allCalculators[this.calculator.code];
         if (calculator) {
             const response = await calculator.calculate(ctx, order, this.calculator.args, this);
             if (response) {
-                const { price, priceIncludesTax, taxRate, metadata } = response;
-                return {
-                    price: roundMoney(price),
-                    priceIncludesTax,
-                    taxRate,
-                    metadata,
-                };
+                if (Array.isArray(response)) {
+                    if (response.length === 0) return;
+                    return (response as ShippingCalculationResult[]).map(e => ({
+                        ...e,
+                        price: roundMoney(e.price)
+                    }))
+                } else {
+                    const { price, priceIncludesTax, taxRate, metadata } = response;
+                    return {
+                        price: roundMoney(price),
+                        priceIncludesTax,
+                        taxRate,
+                        metadata,
+                    };
+                }
             }
         }
     }

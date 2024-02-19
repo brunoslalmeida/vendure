@@ -6145,6 +6145,12 @@ export type TestShippingMethodInput = {
   shippingAddress: CreateAddressInput;
 };
 
+export type TestShippingMethodItemResult = {
+  __typename?: 'TestShippingMethodItemResult';
+  eligible: Scalars['Boolean']['output'];
+  quote?: Maybe<TestShippingMethodQuote>;
+};
+
 export type TestShippingMethodOrderLineInput = {
   productVariantId: Scalars['ID']['input'];
   quantity: Scalars['Int']['input'];
@@ -6160,6 +6166,7 @@ export type TestShippingMethodQuote = {
 export type TestShippingMethodResult = {
   __typename?: 'TestShippingMethodResult';
   eligible: Scalars['Boolean']['output'];
+  list?: Maybe<Array<TestShippingMethodItemResult>>;
   quote?: Maybe<TestShippingMethodQuote>;
 };
 

@@ -4,6 +4,7 @@ import {
     ShippingMethodQuote,
     TestEligibleShippingMethodsInput,
     TestShippingMethodInput,
+    TestShippingMethodItemResult,
     TestShippingMethodQuote,
     TestShippingMethodResult,
 } from '@vendure/common/lib/generated-types';
@@ -23,6 +24,7 @@ import { OrderCalculator } from '../helpers/order-calculator/order-calculator';
 import { ProductPriceApplicator } from '../helpers/product-price-applicator/product-price-applicator';
 import { ShippingCalculator } from '../helpers/shipping-calculator/shipping-calculator';
 import { TranslatorService } from '../helpers/translator/translator.service';
+import { ShippingCalculationResult } from '../../config/shipping-method/shipping-calculator';
 
 /**
  * @description
@@ -59,21 +61,37 @@ export class OrderTestingService {
         const mockOrder = await this.buildMockOrder(ctx, input.shippingAddress, input.lines);
         const eligible = await shippingMethod.test(ctx, mockOrder);
         const result = eligible ? await shippingMethod.apply(ctx, mockOrder) : undefined;
+
+        const { quote } = this.getItemResult(Array.isArray(result) ? result[0] : result, eligible);
+        return {
+            quote,
+            eligible,
+            list: Array.isArray(result)
+                ? result.map(e => this.getItemResult(e, eligible))
+                : [{ quote, eligible }],
+        };
+    }
+
+    private getItemResult(
+        result: ShippingCalculationResult | undefined,
+        eligible: boolean,
+    ): TestShippingMethodItemResult {
         let quote: TestShippingMethodQuote | undefined;
+
         if (result) {
-            const { price, priceIncludesTax, taxRate, metadata } = result;
+            const { price, priceIncludesTax, taxRate, metadata } = Array.isArray(result) ? result[0] : result;
             quote = {
                 price: priceIncludesTax ? netPriceOf(price, taxRate) : price,
                 priceWithTax: priceIncludesTax ? price : grossPriceOf(price, taxRate),
                 metadata,
             };
         }
+
         return {
             eligible,
             quote,
         };
     }
-
     /**
      * @description
      * Tests all available ShippingMethods against a mock Order and return those which are eligible. This
