@@ -27,22 +27,22 @@
                 </div>
                 {{ testResult?.eligible }}
             </vdr-labeled-data>
-            <div class="price-row" *ngFor="let item of testResult?.list">
+            <div class="price-row" *ngFor="let item of testResult?.quotes">
                 <vdr-labeled-data
                     [label]="'common.price' | translate"
-                    *ngIf="item?.quote?.price != null"
+                    *ngIf="item?.price != null"
                 >
-                    {{ item.quote?.price | localeCurrency: currencyCode }}
+                    {{ item.price | localeCurrency: currencyCode }}
                 </vdr-labeled-data>
                 <vdr-labeled-data
                     [label]="'common.price-with-tax' | translate"
-                    *ngIf="item?.quote?.priceWithTax != null"
+                    *ngIf="item?.priceWithTax != null"
                 >
-                    {{ item.quote?.priceWithTax | localeCurrency: currencyCode }}
+                    {{ item.priceWithTax | localeCurrency: currencyCode }}
                 </vdr-labeled-data>
                 <vdr-object-tree
-                    *ngIf="item?.quote?.metadata"
-                    [value]="item?.quote?.metadata"
+                    *ngIf="item?.metadata"
+                    [value]="item?.metadata"
                 ></vdr-object-tree> 
             </div>
         </div>

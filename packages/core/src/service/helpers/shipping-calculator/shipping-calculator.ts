@@ -40,7 +40,7 @@ export class ShippingCalculator {
 
             if (eligibility){
                 if(Array.isArray(eligibility)){
-                    eligibility.push(...eligibility)
+                    eligibleMethods.push(...eligibility)
                 }else{
                     eligibleMethods.push(eligibility)
                 }

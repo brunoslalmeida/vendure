@@ -69,15 +69,10 @@ input TestShippingMethodOrderLineInput {
     quantity: Int!
 }
 
-type TestShippingMethodItemResult {
-    eligible: Boolean!
-    quote: TestShippingMethodQuote
-}
-
 type TestShippingMethodResult {
     eligible: Boolean!
     quote: TestShippingMethodQuote,
-    list: [TestShippingMethodItemResult!]
+    quotes: [TestShippingMethodQuote!]
 }
 
 type TestShippingMethodQuote {
