@@ -843,13 +843,9 @@ export type CreatePaymentMethodInput = {
   translations: Array<PaymentMethodTranslationInput>;
 };
 
-export type CreateProductCustomFieldsInput = {
-  secret?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type CreateProductInput = {
   assetIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  customFields?: InputMaybe<CreateProductCustomFieldsInput>;
+  customFields?: InputMaybe<Scalars['JSON']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   facetValueIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   featuredAssetId?: InputMaybe<Scalars['ID']['input']>;
@@ -4608,7 +4604,7 @@ export type Product = Node & {
   channels: Array<Channel>;
   collections: Array<Collection>;
   createdAt: Scalars['DateTime']['output'];
-  customFields?: Maybe<ProductCustomFields>;
+  customFields?: Maybe<Scalars['JSON']['output']>;
   description: Scalars['String']['output'];
   enabled: Scalars['Boolean']['output'];
   facetValues: Array<FacetValue>;
@@ -4631,11 +4627,6 @@ export type ProductVariantListArgs = {
   options?: InputMaybe<ProductVariantListOptions>;
 };
 
-export type ProductCustomFields = {
-  __typename?: 'ProductCustomFields';
-  secret?: Maybe<Scalars['String']['output']>;
-};
-
 export type ProductFilterParameter = {
   _and?: InputMaybe<Array<ProductFilterParameter>>;
   _or?: InputMaybe<Array<ProductFilterParameter>>;
@@ -4646,7 +4637,6 @@ export type ProductFilterParameter = {
   id?: InputMaybe<IdOperators>;
   languageCode?: InputMaybe<StringOperators>;
   name?: InputMaybe<StringOperators>;
-  secret?: InputMaybe<StringOperators>;
   sku?: InputMaybe<StringOperators>;
   slug?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
@@ -4743,7 +4733,6 @@ export type ProductSortParameter = {
   description?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
-  secret?: InputMaybe<SortOrder>;
   slug?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
 };
@@ -6499,13 +6488,9 @@ export type UpdatePaymentMethodInput = {
   translations?: InputMaybe<Array<PaymentMethodTranslationInput>>;
 };
 
-export type UpdateProductCustomFieldsInput = {
-  secret?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type UpdateProductInput = {
   assetIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  customFields?: InputMaybe<UpdateProductCustomFieldsInput>;
+  customFields?: InputMaybe<Scalars['JSON']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   facetValueIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   featuredAssetId?: InputMaybe<Scalars['ID']['input']>;

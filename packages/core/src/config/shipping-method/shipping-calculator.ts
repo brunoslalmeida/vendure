@@ -64,7 +64,7 @@ export class ShippingCalculator<T extends ConfigArgs = ConfigArgs> extends Confi
         order: Order,
         args: ConfigArg[],
         method: ShippingMethod,
-    ): CalculateShippingFnResult | CalculateShippingFnResult[]{
+    ): CalculateShippingFnResult | CalculateShippingFnResult[] {
         return this.calculateFn(ctx, order, this.argsArrayToHash(args), method);
     }
 }
