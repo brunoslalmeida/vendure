@@ -48,6 +48,7 @@ import { PaymentMethodHandler } from './payment/payment-method-handler';
 import { PaymentProcess } from './payment/payment-process';
 import { PromotionAction } from './promotion/promotion-action';
 import { PromotionCondition } from './promotion/promotion-condition';
+import { RefundProcess } from './refund/refund-process';
 import { SessionCacheStrategy } from './session-cache/session-cache-strategy';
 import { ShippingCalculator } from './shipping-method/shipping-calculator';
 import { ShippingEligibilityChecker } from './shipping-method/shipping-eligibility-checker';
@@ -400,9 +401,8 @@ export interface AuthOptions {
      * @description
      * Determines whether new User accounts require verification of their email address.
      *
-     * If set to "true", when registering via the `registerCustomerAccount` mutation, one should *not* set the
-     * `password` property - doing so will result in an error. Instead, the password is set at a later stage
-     * (once the email with the verification token has been opened) via the `verifyCustomerAccount` mutation.
+     * If set to "true", the customer will be required to verify their email address using a verification token
+     * they receive in their email. See the `registerCustomerAccount` mutation for more details on the verification behavior.
      *
      * @default true
      */
@@ -489,7 +489,7 @@ export interface OrderOptions {
      * to perform price calculations against active promotions and taxes. This can have a significant
      * performance impact for very large values.
      *
-     * Attempting to exceed this limit will cause Vendure to throw a {@link OrderItemsLimitError}.
+     * Attempting to exceed this limit will cause Vendure to throw a `OrderLimitError`.
      *
      * @default 999
      */
@@ -500,7 +500,7 @@ export interface OrderOptions {
      * on the `orderItemsLimit` for more granular control. Note `orderItemsLimit` is still
      * important in order to prevent excessive resource usage.
      *
-     * Attempting to exceed this limit will cause Vendure to throw a {@link OrderItemsLimitError}.
+     * Attempting to exceed this limit will cause Vendure to throw a OrderLimitError`.
      *
      * @default 999
      */
@@ -848,6 +848,14 @@ export interface PaymentOptions {
      * @since 2.0.0
      */
     process?: Array<PaymentProcess<any>>;
+    /**
+     * @description
+     * Allows the definition of custom states and transition logic for the refund process state machine.
+     * Takes an array of objects implementing the {@link RefundProcess} interface.
+     *
+     * @default defaultRefundProcess
+     */
+    refundProcess?: Array<RefundProcess<any>>;
 }
 
 /**
@@ -1211,10 +1219,10 @@ type DeepPartialSimple<T> = {
         | (T[P] extends Array<infer U>
               ? Array<DeepPartialSimple<U>>
               : T[P] extends ReadonlyArray<infer X>
-              ? ReadonlyArray<DeepPartialSimple<X>>
-              : T[P] extends Type<any>
-              ? T[P]
-              : DeepPartialSimple<T[P]>);
+                ? ReadonlyArray<DeepPartialSimple<X>>
+                : T[P] extends Type<any>
+                  ? T[P]
+                  : DeepPartialSimple<T[P]>);
 };
 
 export type PartialVendureConfig = DeepPartialSimple<VendureConfig>;

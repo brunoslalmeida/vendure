@@ -46,12 +46,14 @@ import { FindOptionsUtils } from 'typeorm/find-options/FindOptionsUtils';
 import { RequestContext } from '../../api/common/request-context';
 import { RelationPaths } from '../../api/decorators/relations.decorator';
 import { RequestContextCacheService } from '../../cache/request-context-cache.service';
+import { CacheKey } from '../../common/constants';
 import { ErrorResultUnion, isGraphQlErrorResult } from '../../common/error/error-result';
 import { EntityNotFoundError, InternalServerError, UserInputError } from '../../common/error/errors';
 import {
     CancelPaymentError,
     EmptyOrderLineSelectionError,
     FulfillmentStateTransitionError,
+    RefundStateTransitionError,
     InsufficientStockOnHandError,
     ItemsAlreadyFulfilledError,
     ManualPaymentStateError,
@@ -80,10 +82,10 @@ import { Channel } from '../../entity/channel/channel.entity';
 import { Customer } from '../../entity/customer/customer.entity';
 import { Fulfillment } from '../../entity/fulfillment/fulfillment.entity';
 import { HistoryEntry } from '../../entity/history-entry/history-entry.entity';
-import { FulfillmentLine } from '../../entity/order-line-reference/fulfillment-line.entity';
-import { OrderLine } from '../../entity/order-line/order-line.entity';
-import { OrderModification } from '../../entity/order-modification/order-modification.entity';
 import { Order } from '../../entity/order/order.entity';
+import { OrderLine } from '../../entity/order-line/order-line.entity';
+import { FulfillmentLine } from '../../entity/order-line-reference/fulfillment-line.entity';
+import { OrderModification } from '../../entity/order-modification/order-modification.entity';
 import { Payment } from '../../entity/payment/payment.entity';
 import { ProductVariant } from '../../entity/product-variant/product-variant.entity';
 import { Promotion } from '../../entity/promotion/promotion.entity';
@@ -93,13 +95,12 @@ import { ShippingLine } from '../../entity/shipping-line/shipping-line.entity';
 import { Surcharge } from '../../entity/surcharge/surcharge.entity';
 import { User } from '../../entity/user/user.entity';
 import { EventBus } from '../../event-bus/event-bus';
-import {
-    CouponCodeEvent,
-    OrderEvent,
-    OrderLineEvent,
-    OrderStateTransitionEvent,
-    RefundStateTransitionEvent,
-} from '../../event-bus/index';
+import { CouponCodeEvent } from '../../event-bus/events/coupon-code-event';
+import { OrderEvent } from '../../event-bus/events/order-event';
+import { OrderLineEvent } from '../../event-bus/events/order-line-event';
+import { OrderStateTransitionEvent } from '../../event-bus/events/order-state-transition-event';
+import { RefundEvent } from '../../event-bus/events/refund-event';
+import { RefundStateTransitionEvent } from '../../event-bus/events/refund-state-transition-event';
 import { CustomFieldRelationService } from '../helpers/custom-field-relation/custom-field-relation.service';
 import { FulfillmentState } from '../helpers/fulfillment-state-machine/fulfillment-state';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder';
@@ -109,6 +110,7 @@ import { OrderModifier } from '../helpers/order-modifier/order-modifier';
 import { OrderState } from '../helpers/order-state-machine/order-state';
 import { OrderStateMachine } from '../helpers/order-state-machine/order-state-machine';
 import { PaymentState } from '../helpers/payment-state-machine/payment-state';
+import { RefundState } from '../helpers/refund-state-machine/refund-state';
 import { RefundStateMachine } from '../helpers/refund-state-machine/refund-state-machine';
 import { ShippingCalculator } from '../helpers/shipping-calculator/shipping-calculator';
 import { TranslatorService } from '../helpers/translator/translator.service';
@@ -426,7 +428,7 @@ export class OrderService {
         }
         await this.channelService.assignToCurrentChannel(newOrder, ctx);
         const order = await this.connection.getRepository(ctx, Order).save(newOrder);
-        this.eventBus.publish(new OrderEvent(ctx, order, 'created'));
+        await this.eventBus.publish(new OrderEvent(ctx, order, 'created'));
         const transitionResult = await this.transitionToState(ctx, order.id, 'AddingItems');
         if (isGraphQlErrorResult(transitionResult)) {
             // this should never occur, so we will throw rather than return
@@ -440,7 +442,7 @@ export class OrderService {
         newOrder.active = false;
         await this.channelService.assignToCurrentChannel(newOrder, ctx);
         const order = await this.connection.getRepository(ctx, Order).save(newOrder);
-        this.eventBus.publish(new OrderEvent(ctx, order, 'created'));
+        await this.eventBus.publish(new OrderEvent(ctx, order, 'created'));
         const transitionResult = await this.transitionToState(ctx, order.id, 'Draft');
         if (isGraphQlErrorResult(transitionResult)) {
             // this should never occur, so we will throw rather than return
@@ -473,9 +475,9 @@ export class OrderService {
     async updateCustomFields(ctx: RequestContext, orderId: ID, customFields: any) {
         let order = await this.getOrderOrThrow(ctx, orderId);
         order = patchEntity(order, { customFields });
-        await this.customFieldRelationService.updateRelations(ctx, Order, { customFields }, order);
         const updatedOrder = await this.connection.getRepository(ctx, Order).save(order);
-        this.eventBus.publish(new OrderEvent(ctx, updatedOrder, 'updated'));
+        await this.customFieldRelationService.updateRelations(ctx, Order, { customFields }, updatedOrder);
+        await this.eventBus.publish(new OrderEvent(ctx, updatedOrder, 'updated'));
         return updatedOrder;
     }
 
@@ -509,7 +511,7 @@ export class OrderService {
         }
 
         const updatedOrder = await this.addCustomerToOrder(ctx, order.id, targetCustomer);
-        this.eventBus.publish(new OrderEvent(ctx, updatedOrder, 'updated'));
+        await this.eventBus.publish(new OrderEvent(ctx, updatedOrder, 'updated'));
         await this.historyService.createHistoryEntryForOrder({
             ctx,
             orderId,
@@ -563,11 +565,20 @@ export class OrderService {
         if (variant.product.enabled === false) {
             throw new EntityNotFoundError('ProductVariant', productVariantId);
         }
+        const existingQuantityInOtherLines = summate(
+            order.lines.filter(
+                l =>
+                    idsAreEqual(l.productVariantId, productVariantId) &&
+                    !idsAreEqual(l.id, existingOrderLine?.id),
+            ),
+            'quantity',
+        );
         const correctedQuantity = await this.orderModifier.constrainQuantityToSaleable(
             ctx,
             variant,
             quantity,
             existingOrderLine?.quantity,
+            existingQuantityInOtherLines,
         );
         if (correctedQuantity === 0) {
             return new InsufficientStockError({ order, quantityAvailable: correctedQuantity });
@@ -623,17 +634,27 @@ export class OrderService {
                 orderLine,
             );
         }
+        const existingQuantityInOtherLines = summate(
+            order.lines.filter(
+                l =>
+                    idsAreEqual(l.productVariantId, orderLine.productVariantId) &&
+                    !idsAreEqual(l.id, orderLineId),
+            ),
+            'quantity',
+        );
         const correctedQuantity = await this.orderModifier.constrainQuantityToSaleable(
             ctx,
             orderLine.productVariant,
             quantity,
+            0,
+            existingQuantityInOtherLines,
         );
         let updatedOrderLines = [orderLine];
         if (correctedQuantity === 0) {
             order.lines = order.lines.filter(l => !idsAreEqual(l.id, orderLine.id));
             const deletedOrderLine = new OrderLine(orderLine);
             await this.connection.getRepository(ctx, OrderLine).remove(orderLine);
-            this.eventBus.publish(new OrderLineEvent(ctx, order, deletedOrderLine, 'deleted'));
+            await this.eventBus.publish(new OrderLineEvent(ctx, order, deletedOrderLine, 'deleted'));
             updatedOrderLines = [];
         } else {
             await this.orderModifier.updateOrderLineQuantity(ctx, orderLine, correctedQuantity, order);
@@ -671,7 +692,7 @@ export class OrderService {
         const updatedOrder = await this.applyPriceAdjustments(ctx, order);
         const deletedOrderLine = new OrderLine(orderLine);
         await this.connection.getRepository(ctx, OrderLine).remove(orderLine);
-        this.eventBus.publish(new OrderLineEvent(ctx, order, deletedOrderLine, 'deleted'));
+        await this.eventBus.publish(new OrderLineEvent(ctx, order, deletedOrderLine, 'deleted'));
         return updatedOrder;
     }
 
@@ -764,7 +785,7 @@ export class OrderService {
             type: HistoryEntryType.ORDER_COUPON_APPLIED,
             data: { couponCode, promotionId: validationResult.id },
         });
-        this.eventBus.publish(new CouponCodeEvent(ctx, couponCode, orderId, 'assigned'));
+        await this.eventBus.publish(new CouponCodeEvent(ctx, couponCode, orderId, 'assigned'));
         return this.applyPriceAdjustments(ctx, order);
     }
 
@@ -790,7 +811,7 @@ export class OrderService {
                 type: HistoryEntryType.ORDER_COUPON_REMOVED,
                 data: { couponCode },
             });
-            this.eventBus.publish(new CouponCodeEvent(ctx, couponCode, orderId, 'removed'));
+            await this.eventBus.publish(new CouponCodeEvent(ctx, couponCode, orderId, 'removed'));
             const result = await this.applyPriceAdjustments(ctx, order);
             await this.connection.getRepository(ctx, OrderLine).save(affectedOrderLines);
             return result;
@@ -838,7 +859,8 @@ export class OrderService {
         // Since a changed ShippingAddress could alter the activeTaxZone,
         // we will remove any cached activeTaxZone, so it can be re-calculated
         // as needed.
-        this.requestCache.set(ctx, 'activeTaxZone', undefined);
+        this.requestCache.set(ctx, CacheKey.ActiveTaxZone, undefined);
+        this.requestCache.set(ctx, CacheKey.ActiveTaxZone_PPA, undefined);
         return this.applyPriceAdjustments(ctx, order, order.lines);
     }
 
@@ -861,7 +883,8 @@ export class OrderService {
         // Since a changed BillingAddress could alter the activeTaxZone,
         // we will remove any cached activeTaxZone, so it can be re-calculated
         // as needed.
-        this.requestCache.set(ctx, 'activeTaxZone', undefined);
+        this.requestCache.set(ctx, CacheKey.ActiveTaxZone, undefined);
+        this.requestCache.set(ctx, CacheKey.ActiveTaxZone_PPA, undefined);
         return this.applyPriceAdjustments(ctx, order, order.lines);
     }
 
@@ -944,7 +967,7 @@ export class OrderService {
             return new OrderStateTransitionError({ transitionError, fromState, toState: state });
         }
         await this.connection.getRepository(ctx, Order).save(order, { reload: false });
-        this.eventBus.publish(new OrderStateTransitionEvent(fromState, state, ctx, order));
+        await this.eventBus.publish(new OrderStateTransitionEvent(fromState, state, ctx, order));
         await finalize();
         await this.connection.getRepository(ctx, Order).save(order, { reload: false });
         return order;
@@ -965,6 +988,38 @@ export class OrderService {
             return result;
         }
         return result.fulfillment;
+    }
+
+    /**
+     * @description
+     * Transitions a Refund to the given state
+     */
+    async transitionRefundToState(
+        ctx: RequestContext,
+        refundId: ID,
+        state: RefundState,
+        transactionId?: string,
+    ): Promise<Refund | RefundStateTransitionError> {
+        const refund = await this.connection.getEntityOrThrow(ctx, Refund, refundId, {
+            relations: ['payment', 'payment.order'],
+        });
+        if (transactionId && refund.transactionId !== transactionId) {
+            refund.transactionId = transactionId;
+        }
+        const fromState = refund.state;
+        const toState = state;
+        const { finalize } = await this.refundStateMachine.transition(
+            ctx,
+            refund.payment.order,
+            refund,
+            toState,
+        );
+        await this.connection.getRepository(ctx, Refund).save(refund);
+        await finalize();
+        await this.eventBus.publish(
+            new RefundStateTransitionEvent(fromState, toState, ctx, refund, refund.payment.order),
+        );
+        return refund;
     }
 
     /**
@@ -1399,7 +1454,12 @@ export class OrderService {
             return new RefundOrderStateError({ orderState: order.state });
         }
 
-        return await this.paymentService.createRefund(ctx, input, order, payment);
+        const createdRefund = await this.paymentService.createRefund(ctx, input, order, payment);
+
+        if (createdRefund instanceof Refund) {
+            await this.eventBus.publish(new RefundEvent(ctx, order, createdRefund, 'created'));
+        }
+        return createdRefund;
     }
 
     /**
@@ -1421,7 +1481,7 @@ export class OrderService {
         );
         await this.connection.getRepository(ctx, Refund).save(refund);
         await finalize();
-        this.eventBus.publish(
+        await this.eventBus.publish(
             new RefundStateTransitionEvent(fromState, toState, ctx, refund, refund.payment.order),
         );
         return refund;
@@ -1527,7 +1587,9 @@ export class OrderService {
                 .getRepository(ctx, Session)
                 .update(sessions.map(s => s.id) as string[], { activeOrder: null });
         }
+        const deletedOrder = new Order(orderToDelete);
         await this.connection.getRepository(ctx, Order).delete(orderToDelete.id);
+        await this.eventBus.publish(new OrderEvent(ctx, deletedOrder, 'deleted'));
     }
 
     /**

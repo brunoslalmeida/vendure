@@ -8,15 +8,17 @@ import {
 } from '@vendure/common/lib/generated-types';
 import { IsNull } from 'typeorm';
 
-import { Injector, InternalServerError } from '../../../common/index';
-import { TransactionalConnection } from '../../../connection/index';
-import { Product, ProductOptionGroup, ProductVariant } from '../../../entity/index';
-import {
-    ProductOptionGroupService,
-    ProductOptionService,
-    ProductService,
-    ProductVariantService,
-} from '../../../service/index';
+import { idsAreEqual } from '../../../common';
+import { InternalServerError } from '../../../common/error/errors';
+import { Injector } from '../../../common/injector';
+import { TransactionalConnection } from '../../../connection/transactional-connection';
+import { Product } from '../../../entity/product/product.entity';
+import { ProductOptionGroup } from '../../../entity/product-option-group/product-option-group.entity';
+import { ProductVariant } from '../../../entity/product-variant/product-variant.entity';
+import { ProductOptionGroupService } from '../../../service/services/product-option-group.service';
+import { ProductOptionService } from '../../../service/services/product-option.service';
+import { ProductVariantService } from '../../../service/services/product-variant.service';
+import { ProductService } from '../../../service/services/product.service';
 import { EntityDuplicator } from '../entity-duplicator';
 
 let connection: TransactionalConnection;
@@ -77,7 +79,7 @@ export const productDuplicator = new EntityDuplicator({
             };
         });
         const productInput: CreateProductInput = {
-            featuredAssetId: product.featuredAsset.id,
+            featuredAssetId: product.featuredAsset?.id,
             enabled: false,
             assetIds: product.assets.map(value => value.assetId),
             facetValueIds: product.facetValues.map(value => value.id),
@@ -101,6 +103,8 @@ export const productDuplicator = new EntityDuplicator({
                     featuredAsset: true,
                     stockLevels: true,
                     facetValues: true,
+                    productVariantPrices: true,
+                    taxCategory: true,
                 },
             });
             if (product.optionGroups && product.optionGroups.length) {
@@ -149,7 +153,6 @@ export const productDuplicator = new EntityDuplicator({
                     options: true,
                 },
             });
-
             const variantInput: CreateProductVariantInput[] = productVariants.map((variant, i) => {
                 const options = variant.options.map(existingOption => {
                     const newOption = newOptionGroups
@@ -162,12 +165,16 @@ export const productDuplicator = new EntityDuplicator({
                     }
                     return newOption;
                 });
+                const price =
+                    variant.productVariantPrices.find(p => idsAreEqual(p.channelId, ctx.channelId))?.price ??
+                    variant.productVariantPrices[0]?.price;
                 return {
                     productId: duplicatedProduct.id,
-                    price: variant.price,
+                    price: price ?? variant.price,
                     sku: `${variant.sku}-copy`,
                     stockOnHand: 1,
                     featuredAssetId: variant.featuredAsset?.id,
+                    taxCategoryId: variant.taxCategory?.id,
                     useGlobalOutOfStockThreshold: variant.useGlobalOutOfStockThreshold,
                     trackInventory: variant.trackInventory,
                     assetIds: variant.assets.map(value => value.assetId),

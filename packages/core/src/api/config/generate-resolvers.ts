@@ -4,15 +4,16 @@ import { GraphQLSchema } from 'graphql';
 import { GraphQLDateTime, GraphQLJSON } from 'graphql-scalars';
 
 import { REQUEST_CONTEXT_KEY } from '../../common/constants';
+import { InternalServerError } from '../../common/error/errors';
 import {
     adminErrorOperationTypeResolvers,
     ErrorResult,
 } from '../../common/error/generated-graphql-admin-errors';
 import { shopErrorOperationTypeResolvers } from '../../common/error/generated-graphql-shop-errors';
-import { InternalServerError } from '../../common/index';
 import { Translatable } from '../../common/types/locale-types';
 import { ConfigService } from '../../config/config.service';
 import { CustomFieldConfig, RelationCustomFieldConfig } from '../../config/custom-field/custom-field-types';
+import { Logger } from '../../config/logger/vendure-logger';
 import { Region } from '../../entity/region/region.entity';
 import { getPluginAPIExtensions } from '../../plugin/plugin-metadata';
 import { CustomFieldRelationResolverService } from '../common/custom-field-relation-resolver.service';
@@ -212,7 +213,17 @@ function generateCustomFieldRelationResolvers(
                     const eagerEntity = source[fieldDef.name];
                     // If the relation is eager-loaded, we can simply try to translate this relation entity if they have translations
                     if (eagerEntity != null) {
-                        return customFieldRelationResolverService.translateEntity(ctx, eagerEntity, fieldDef);
+                        try {
+                            return await customFieldRelationResolverService.translateEntity(
+                                ctx,
+                                eagerEntity,
+                                fieldDef,
+                            );
+                        } catch (e: any) {
+                            Logger.debug(
+                                `Error resolving eager-loaded custom field entity relation "${entityName}.${fieldDef.name}": ${e.message as string}`,
+                            );
+                        }
                     }
                     const entityId = source[ENTITY_ID_KEY];
                     return customFieldRelationResolverService.resolveRelation({

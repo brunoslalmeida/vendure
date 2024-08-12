@@ -1,42 +1,63 @@
-import { note, outro, spinner, log } from '@clack/prompts';
+import { cancel, log, note, outro, spinner } from '@clack/prompts';
+import fs from 'fs-extra';
 import path from 'path';
-import { ClassDeclaration } from 'ts-morph';
 
-import { selectPluginClass } from '../../../shared/shared-prompts';
-import { getRelativeImportPath, getTsMorphProject, getVendureConfig } from '../../../utilities/ast-utils';
-import { determineVendureVersion, installRequiredPackages } from '../../../utilities/package-utils';
-import { Scaffolder } from '../../../utilities/scaffolder';
+import { CliCommand, CliCommandReturnVal } from '../../../shared/cli-command';
+import { PackageJson } from '../../../shared/package-json-ref';
+import { analyzeProject, selectPlugin } from '../../../shared/shared-prompts';
+import { VendureConfigRef } from '../../../shared/vendure-config-ref';
+import { VendurePluginRef } from '../../../shared/vendure-plugin-ref';
+import { createFile, getRelativeImportPath } from '../../../utilities/ast-utils';
 
 import { addUiExtensionStaticProp } from './codemods/add-ui-extension-static-prop/add-ui-extension-static-prop';
 import { updateAdminUiPluginInit } from './codemods/update-admin-ui-plugin-init/update-admin-ui-plugin-init';
-import { renderProviders } from './scaffold/providers';
-import { renderRoutes } from './scaffold/routes';
 
-export async function addUiExtensions() {
-    const projectSpinner = spinner();
-    projectSpinner.start('Analyzing project...');
+export interface AddUiExtensionsOptions {
+    plugin?: VendurePluginRef;
+}
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const project = getTsMorphProject();
-    projectSpinner.stop('Project analyzed');
+export const addUiExtensionsCommand = new CliCommand<AddUiExtensionsOptions>({
+    id: 'add-ui-extensions',
+    category: 'Plugin: UI',
+    description: 'Set up Admin UI extensions',
+    run: options => addUiExtensions(options),
+});
 
-    const pluginClass = await selectPluginClass(project, 'Add UI extensions cancelled');
-    if (pluginAlreadyHasUiExtensionProp(pluginClass)) {
-        outro('This plugin already has a UI extension configured');
-        return;
+async function addUiExtensions(options?: AddUiExtensionsOptions): Promise<CliCommandReturnVal> {
+    const providedVendurePlugin = options?.plugin;
+    const { project } = await analyzeProject({ providedVendurePlugin });
+    const vendurePlugin =
+        providedVendurePlugin ?? (await selectPlugin(project, 'Add UI extensions cancelled'));
+    const packageJson = new PackageJson(project);
+
+    if (vendurePlugin.hasUiExtensions()) {
+        outro('This plugin already has UI extensions configured');
+        return { project, modifiedSourceFiles: [] };
     }
-    addUiExtensionStaticProp(pluginClass);
+    addUiExtensionStaticProp(vendurePlugin);
 
     log.success('Updated the plugin class');
     const installSpinner = spinner();
-    installSpinner.start(`Installing dependencies...`);
+    const packageManager = packageJson.determinePackageManager();
+    const packageJsonFile = packageJson.locatePackageJsonWithVendureDependency();
+    log.info(`Detected package manager: ${packageManager}`);
+    if (!packageJsonFile) {
+        cancel(`Could not locate package.json file with a dependency on Vendure.`);
+        process.exit(1);
+    }
+    log.info(`Detected package.json: ${packageJsonFile}`);
+    installSpinner.start(`Installing dependencies using ${packageManager}...`);
     try {
-        const version = determineVendureVersion();
-        await installRequiredPackages([
+        const version = packageJson.determineVendureVersion();
+        await packageJson.installPackages([
             {
                 pkg: '@vendure/ui-devkit',
                 isDevDependency: true,
                 version,
+            },
+            {
+                pkg: '@types/react',
+                isDevDependency: true,
             },
         ]);
     } catch (e: any) {
@@ -44,26 +65,29 @@ export async function addUiExtensions() {
     }
     installSpinner.stop('Dependencies installed');
 
-    const scaffolder = new Scaffolder();
-    scaffolder.addFile(renderProviders, 'providers.ts');
-    scaffolder.addFile(renderRoutes, 'routes.ts');
+    const pluginDir = vendurePlugin.getPluginDir().getPath();
+
+    const providersFileDest = path.join(pluginDir, 'ui', 'providers.ts');
+    if (!fs.existsSync(providersFileDest)) {
+        createFile(project, path.join(__dirname, 'templates/providers.template.ts'), providersFileDest);
+    }
+    const routesFileDest = path.join(pluginDir, 'ui', 'routes.ts');
+    if (!fs.existsSync(routesFileDest)) {
+        createFile(project, path.join(__dirname, 'templates/routes.template.ts'), routesFileDest);
+    }
+
     log.success('Created UI extension scaffold');
 
-    const pluginDir = pluginClass.getSourceFile().getDirectory().getPath();
-    scaffolder.createScaffold({
-        dir: path.join(pluginDir, 'ui'),
-        context: {},
-    });
-    const vendureConfig = getVendureConfig(project);
+    const vendureConfig = new VendureConfigRef(project);
     if (!vendureConfig) {
         log.warning(
             `Could not find the VendureConfig declaration in your project. You will need to manually set up the compileUiExtensions function.`,
         );
     } else {
-        const pluginClassName = pluginClass.getName() as string;
+        const pluginClassName = vendurePlugin.name;
         const pluginPath = getRelativeImportPath({
-            to: vendureConfig.getSourceFile(),
-            from: pluginClass.getSourceFile(),
+            to: vendurePlugin.classDeclaration.getSourceFile(),
+            from: vendureConfig.sourceFile,
         });
         const updated = updateAdminUiPluginInit(vendureConfig, { pluginClassName, pluginPath });
         if (updated) {
@@ -78,16 +102,6 @@ export async function addUiExtensions() {
         }
     }
 
-    project.saveSync();
-    outro('✅  Done!');
-}
-
-function pluginAlreadyHasUiExtensionProp(pluginClass: ClassDeclaration) {
-    const uiProperty = pluginClass.getProperty('ui');
-    if (!uiProperty) {
-        return false;
-    }
-    if (uiProperty.isStatic()) {
-        return true;
-    }
+    await project.save();
+    return { project, modifiedSourceFiles: [vendurePlugin.classDeclaration.getSourceFile()] };
 }

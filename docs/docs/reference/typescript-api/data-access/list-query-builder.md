@@ -11,7 +11,7 @@ import MemberDescription from '@site/src/components/MemberDescription';
 
 ## ListQueryBuilder
 
-<GenerationInfo sourceFile="packages/core/src/service/helpers/list-query-builder/list-query-builder.ts" sourceLine="205" packageName="@vendure/core" />
+<GenerationInfo sourceFile="packages/core/src/service/helpers/list-query-builder/list-query-builder.ts" sourceLine="200" packageName="@vendure/core" />
 
 This helper class is used when fetching entities the database from queries which return a <a href='/reference/typescript-api/common/paginated-list#paginatedlist'>PaginatedList</a> type.
 These queries all follow the same format:
@@ -113,7 +113,7 @@ to join that relation.
 
 <MemberInfo kind="method" type={`(entity: Type&#60;T&#62;, options: ListQueryOptions&#60;T&#62; = {}, extendedOptions: <a href='/reference/typescript-api/data-access/list-query-builder#extendedlistqueryoptions'>ExtendedListQueryOptions</a>&#60;T&#62; = {}) => SelectQueryBuilder&#60;T&#62;`}   />
 
-Creates and configures a SelectQueryBuilder for queries that return paginated lists of entities.
+
 
 
 </div>
@@ -121,7 +121,7 @@ Creates and configures a SelectQueryBuilder for queries that return paginated li
 
 ## ExtendedListQueryOptions
 
-<GenerationInfo sourceFile="packages/core/src/service/helpers/list-query-builder/list-query-builder.ts" sourceLine="46" packageName="@vendure/core" />
+<GenerationInfo sourceFile="packages/core/src/service/helpers/list-query-builder/list-query-builder.ts" sourceLine="41" packageName="@vendure/core" />
 
 Options which can be passed to the ListQueryBuilder's `build()` method.
 
@@ -233,7 +233,7 @@ query {
 ```
 ### ignoreQueryLimits
 
-<MemberInfo kind="property" type={`boolean`} default="false"  since="2.0.2"  />
+<MemberInfo kind="property" type={`boolean`} default={`false`}  since="2.0.2"  />
 
 When set to `true`, the configured `shopListQueryLimit` and `adminListQueryLimit` values will be ignored,
 allowing unlimited results to be returned. Use caution when exposing an unlimited list query to the public,

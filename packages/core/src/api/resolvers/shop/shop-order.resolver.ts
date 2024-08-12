@@ -253,6 +253,7 @@ export class ShopOrderResolver {
         return new NoActiveOrderError();
     }
 
+    @Transaction()
     @Query()
     @Allow(Permission.Owner)
     async nextOrderStates(
@@ -374,6 +375,7 @@ export class ShopOrderResolver {
             args[ACTIVE_ORDER_INPUT_FIELD_NAME],
             true,
         );
+        return this.orderService.applyCouponCode(ctx, order.id, args.couponCode);
         return this.orderService.applyCouponCode(ctx, order.id, args.couponCode);
     }
 

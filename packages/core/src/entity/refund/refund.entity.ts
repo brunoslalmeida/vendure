@@ -9,6 +9,11 @@ import { Money } from '../money.decorator';
 import { RefundLine } from '../order-line-reference/refund-line.entity';
 import { Payment } from '../payment/payment.entity';
 
+/**
+ * @description A refund the belongs to an order
+ *
+ * @docsCategory entities
+ */
 @Entity()
 export class Refund extends VendureEntity {
     constructor(input?: DeepPartial<Refund>) {
@@ -48,7 +53,7 @@ export class Refund extends VendureEntity {
     lines: RefundLine[];
 
     @Index()
-    @ManyToOne(type => Payment)
+    @ManyToOne(type => Payment, payment => payment.refunds)
     @JoinColumn()
     payment: Payment;
 

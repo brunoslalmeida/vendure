@@ -30,7 +30,7 @@ class PromotionAction<T extends ConfigArgs = ConfigArgs, U extends PromotionCond
 
 ### priorityValue
 
-<MemberInfo kind="property" type={`number`} default="0"   />
+<MemberInfo kind="property" type={`number`} default={`0`}   />
 
 Used to determine the order of application of multiple Promotions
 on the same Order. See the <a href='/reference/typescript-api/entities/promotion#promotion'>Promotion</a> `priorityScore` field for
@@ -58,7 +58,7 @@ Represents a PromotionAction which applies to individual <a href='/reference/typ
 const itemPercentageDiscount = new PromotionItemAction({
     code: 'item_percentage_discount',
     args: { discount: 'percentage' },
-    execute(ctx, orderItem, orderLine, args) {
+    execute(ctx, orderLine, args) {
         return -orderLine.unitPrice * (args.discount / 100);
     },
     description: 'Discount every item by { discount }%',
@@ -247,7 +247,7 @@ interface PromotionActionConfig<T extends ConfigArgs, U extends Array<PromotionC
 
 ### priorityValue
 
-<MemberInfo kind="property" type={`number`} default="0"   />
+<MemberInfo kind="property" type={`number`} default={`0`}   />
 
 Used to determine the order of application of multiple Promotions
 on the same Order. See the <a href='/reference/typescript-api/entities/promotion#promotion'>Promotion</a> `priorityScore` field for

@@ -7,7 +7,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CustomFieldProperty from '@site/src/components/CustomFieldProperty';
 
-Custom fields allow you to add your own custom data properties almost every Vendure entity. The entities which may have custom fields defined are listed in the [CustomFields interface documentation](/reference/typescript-api/custom-fields/).
+Custom fields allow you to add your own custom data properties to almost every Vendure entity. The entities which may have custom fields defined are listed in the [CustomFields interface documentation](/reference/typescript-api/custom-fields/).
 
 Some use-cases for custom fields include:
 
@@ -104,7 +104,7 @@ mutation {
 The custom fields will also extend the filter and sort options available to the `products` list query:
 
 ```graphql
-mutation {
+query {
     products(options: {
         // highlight-start
         filter: {
@@ -636,6 +636,16 @@ const config = {
     }
 };
 ```
+
+:::note
+
+The `requiresPermission` property only affects the _Admin API_. Access to a custom field via the _Shop API_ is controlled by the `public` property.
+
+If you need special logic to control access to a custom field in the Shop API, you can set `public: false` and then implement
+a custom [field resolver](/guides/developer-guide/extend-graphql-api/#add-fields-to-existing-types) which contains the necessary logic, and returns
+the entity's custom field value if the current customer meets the requirements.
+
+:::
 
 ### Properties for `string` fields
 
@@ -1192,7 +1202,7 @@ However, this sacrifices type safety. To make our custom fields type-safe we can
 ```ts
 // types.ts
 
-// Note: we are using deep a import here, rather than importing from `@vendure/core` due to
+// Note: we are using a deep import here, rather than importing from `@vendure/core` due to
 // a possible bug in TypeScript (https://github.com/microsoft/TypeScript/issues/46617) which
 // causes issues when multiple plugins extend the same custom fields interface.
 import { CustomProductFields } from '@vendure/core/dist/entity/custom-entity-fields';

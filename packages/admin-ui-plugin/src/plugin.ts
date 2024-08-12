@@ -45,7 +45,7 @@ export interface AdminUiPluginOptions {
      * @description
      * The route to the Admin UI.
      *
-     * Note: If you are using the {@link compileUiExtensions} function to compile a custom version of the Admin UI, then
+     * Note: If you are using the `compileUiExtensions` function to compile a custom version of the Admin UI, then
      * the route should match the `baseHref` option passed to that function. The default value of `baseHref` is `/admin/`,
      * so it only needs to be changed if you set this `route` option to something other than `"admin"`.
      */
@@ -133,12 +133,15 @@ export interface AdminUiPluginOptions {
         resolvers: [MetricsResolver],
     },
     providers: [MetricsService],
-    compatibility: '^2.0.0',
+    compatibility: '^3.0.0',
 })
 export class AdminUiPlugin implements NestModule {
     private static options: AdminUiPluginOptions | undefined;
 
-    constructor(private configService: ConfigService, private processContext: ProcessContext) {}
+    constructor(
+        private configService: ConfigService,
+        private processContext: ProcessContext,
+    ) {}
 
     /**
      * @description

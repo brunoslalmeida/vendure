@@ -16,6 +16,10 @@ interface DocsSectionConfig {
 
 const sections: DocsSectionConfig[] = [
     {
+        sourceDirs: ['packages/job-queue-plugin/src/'],
+        outputPath: '',
+    },
+    {
         sourceDirs: ['packages/core/src/', 'packages/common/src/', 'packages/testing/src/'],
         exclude: [/generated-shop-types/],
         outputPath: 'typescript-api',
@@ -34,10 +38,6 @@ const sections: DocsSectionConfig[] = [
     },
     {
         sourceDirs: ['packages/elasticsearch-plugin/src/'],
-        outputPath: '',
-    },
-    {
-        sourceDirs: ['packages/job-queue-plugin/src/'],
         outputPath: '',
     },
     {
@@ -72,7 +72,7 @@ if (watchMode) {
     sections.forEach(section => {
         section.sourceDirs.forEach(dir => {
             fs.watch(dir, { recursive: true }, (eventType, file) => {
-                if (extname(file) === '.ts') {
+                if (file && extname(file) === '.ts') {
                     console.log(`Changes detected in ${dir}`);
                     generateTypescriptDocs([section], true);
                 }

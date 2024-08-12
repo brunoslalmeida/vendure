@@ -1,6 +1,6 @@
 {
     "name": "@vendure/cli",
-    "version": "2.2.0-next.5",
+    "version": "3.0.0",
     "description": "A modern, headless ecommerce framework",
     "repository": {
         "type": "git",
@@ -16,13 +16,13 @@
     "homepage": "https://www.vendure.io/",
     "funding": "https://github.com/sponsors/michaelbromley",
     "private": false,
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "type": "commonjs",
     "scripts": {
         "build": "rimraf dist && tsc -p ./tsconfig.cli.json && ts-node ./build.ts",
         "watch": "tsc -p ./tsconfig.cli.json --watch",
-        "ci": "yarn build",
-        "test": "vitest --config ./vitest.config.ts --run"
+        "ci": "npm run build",
+        "test": "vitest --config vitest.config.mts --run"
     },
     "publishConfig": {
         "access": "public"
@@ -35,14 +35,18 @@
     ],
     "dependencies": {
         "@clack/prompts": "^0.7.0",
-        "@vendure/common": "2.2.0-next.5",
+        "@vendure/common": "^3.0.0",
         "change-case": "^4.1.2",
         "commander": "^11.0.0",
-        "fs-extra": "^11.1.1",
+        "dotenv": "^16.4.5",
+        "fs-extra": "^11.2.0",
         "picocolors": "^1.0.0",
-        "ts-morph": "^21.0.1"
+        "ts-morph": "^21.0.1",
+        "ts-node": "^10.9.2",
+        "tsconfig-paths": "^4.2.0"
     },
     "devDependencies": {
-        "typescript": "5.1.6"
+        "@vendure/core": "^3.0.0",
+        "typescript": "5.3.3"
     }
 }

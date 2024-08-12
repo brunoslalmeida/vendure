@@ -4,6 +4,7 @@ import { AdjustmentType } from '@vendure/common/lib/generated-types';
 
 import { RequestContext } from '../../../api/common/request-context';
 import { RequestContextCacheService } from '../../../cache/request-context-cache.service';
+import { CacheKey } from '../../../common/constants';
 import { InternalServerError } from '../../../common/error/errors';
 import { idsAreEqual } from '../../../common/utils';
 import { ConfigService } from '../../../config/config.service';
@@ -58,7 +59,7 @@ export class OrderCalculator {
         // must be revalidated on any changes to an Order.
         order.promotions = [];
         const zones = await this.zoneService.getAllWithMembers(ctx);
-        const activeTaxZone = await this.requestContextCache.get(ctx, 'activeTaxZone', () =>
+        const activeTaxZone = await this.requestContextCache.get(ctx, CacheKey.ActiveTaxZone, () =>
             taxZoneStrategy.determineTaxZone(ctx, zones, ctx.channel, order),
         );
 
@@ -175,6 +176,8 @@ export class OrderCalculator {
      * Applies promotions to OrderItems. This is a quite complex function, due to the inherent complexity
      * of applying the promotions, and also due to added complexity in the name of performance
      * optimization. Therefore, it is heavily annotated so that the purpose of each step is clear.
+     * Additionally, this is used in both promotionItemAction and promotionLineAction,
+     * as it is difficult to separate action types at this stage.
      */
     private async applyOrderItemPromotions(
         ctx: RequestContext,
@@ -198,7 +201,6 @@ export class OrderCalculator {
                     // for (const item of line.items) {
                     const adjustment = await promotion.apply(ctx, { orderLine: line }, state);
                     if (adjustment) {
-                        adjustment.amount = adjustment.amount * line.quantity;
                         line.addAdjustment(adjustment);
                         priceAdjusted = true;
                     }

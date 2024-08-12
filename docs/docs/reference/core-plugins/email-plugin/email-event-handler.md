@@ -11,7 +11,7 @@ import MemberDescription from '@site/src/components/MemberDescription';
 
 ## EmailEventHandler
 
-<GenerationInfo sourceFile="packages/email-plugin/src/handler/event-handler.ts" sourceLine="131" packageName="@vendure/email-plugin" />
+<GenerationInfo sourceFile="packages/email-plugin/src/handler/event-handler.ts" sourceLine="135" packageName="@vendure/email-plugin" />
 
 The EmailEventHandler defines how the EmailPlugin will respond to a given event.
 
@@ -25,6 +25,7 @@ const confirmationHandler = new EmailEventListener('order-confirmation')
   .on(OrderStateTransitionEvent)
   .filter(event => event.toState === 'PaymentSettled')
   .setRecipient(event => event.order.customer.emailAddress)
+  .setFrom('{{ fromAddress }}')
   .setSubject(`Order confirmation for #{{ order.code }}`)
   .setTemplateVars(event => ({ order: event.order }));
 ```
@@ -74,13 +75,16 @@ const quoteRequestedHandler = new EmailEventListener('quote-requested')
   .on(QuoteRequestedEvent)
   .setRecipient(event => event.customer.emailAddress)
   .setSubject(`Here's the quote you requested`)
+  .setFrom('{{ fromAddress }}')
   .setTemplateVars(event => ({ details: event.details }));
 ```
 
 ### 2. Create the email template
 
-Next you need to make sure there is a template defined at `<app root>/static/email/templates/quote-requested/body.hbs`. The template
-would look something like this:
+Next you need to make sure there is a template defined at `<app root>/static/email/templates/quote-requested/body.hbs`. The path
+segment `quote-requested` must match the string passed to the `EmailEventListener` constructor.
+
+The template would look something like this:
 
 ```handlebars
 {{> header title="Here's the quote you requested" }}
@@ -115,7 +119,6 @@ const config: VendureConfig = {
   plugins: [
     EmailPlugin.init({
       handler: [...defaultEmailHandlers, quoteRequestedHandler],
-      templatePath: path.join(__dirname, 'vendure/email/templates'),
       // ... etc
     }),
   ],
@@ -129,7 +132,7 @@ class EmailEventHandler<T extends string = string, Event extends EventWithContex
     setRecipient(setRecipientFn: (event: Event) => string) => EmailEventHandler<T, Event>;
     setLanguageCode(setLanguageCodeFn: (event: Event) => LanguageCode | undefined) => EmailEventHandler<T, Event>;
     setTemplateVars(templateVarsFn: SetTemplateVarsFn<Event>) => EmailEventHandler<T, Event>;
-    setSubject(defaultSubject: string) => EmailEventHandler<T, Event>;
+    setSubject(defaultSubject: string | SetSubjectFn<Event>) => EmailEventHandler<T, Event>;
     setFrom(from: string) => EmailEventHandler<T, Event>;
     setOptionalAddressFields(optionalAddressFieldsFn: SetOptionalAddressFieldsFn<Event>) => ;
     setAttachments(setAttachmentsFn: SetAttachmentsFn<Event>) => ;
@@ -174,7 +177,7 @@ A function which returns an object hash of variables which will be made availabl
 and subject line for interpolation.
 ### setSubject
 
-<MemberInfo kind="method" type={`(defaultSubject: string) => <a href='/reference/core-plugins/email-plugin/email-event-handler#emaileventhandler'>EmailEventHandler</a>&#60;T, Event&#62;`}   />
+<MemberInfo kind="method" type={`(defaultSubject: string | <a href='/reference/core-plugins/email-plugin/email-plugin-types#setsubjectfn'>SetSubjectFn</a>&#60;Event&#62;) => <a href='/reference/core-plugins/email-plugin/email-event-handler#emaileventhandler'>EmailEventHandler</a>&#60;T, Event&#62;`}   />
 
 Sets the default subject of the email. The subject string may use Handlebars variables defined by the
 setTemplateVars() method.
@@ -246,7 +249,8 @@ new EmailEventListener('order-confirmation')
   .setTemplateVars(event => ({
     order: event.order,
     payments: event.data,
-  }));
+  }))
+  // ...
 ```
 ### setMockEvent
 

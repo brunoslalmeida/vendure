@@ -211,7 +211,7 @@ interface StripePluginOptions {
 
 ### storeCustomersInStripe
 
-<MemberInfo kind="property" type={`boolean`} default="false"   />
+<MemberInfo kind="property" type={`boolean`} default={`false`}   />
 
 If set to `true`, a [Customer](https://stripe.com/docs/api/customers) object will be created in Stripe - if
 it doesn't already exist - for authenticated users, which prevents payment methods attached to other Customers

@@ -1,14 +1,14 @@
 {
     "name": "@vendure/common",
-    "version": "2.2.0-next.5",
+    "version": "3.0.0",
     "main": "index.js",
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "scripts": {
         "watch": "tsc -p ./tsconfig.build.json -w",
         "build": "rimraf lib && tsc -p ./tsconfig.build.json",
         "lint": "eslint --fix .",
         "test": "vitest --run",
-        "ci": "yarn build"
+        "ci": "npm run build"
     },
     "homepage": "https://www.vendure.io/",
     "funding": "https://github.com/sponsors/michaelbromley",
@@ -19,7 +19,7 @@
         "lib/**/*"
     ],
     "devDependencies": {
-        "rimraf": "^3.0.2",
-        "typescript": "5.1.6"
+        "rimraf": "^5.0.5",
+        "typescript": "5.3.3"
     }
 }

@@ -3,24 +3,24 @@
 An open-source headless commerce platform built on [Node.js](https://nodejs.org) with [GraphQL](https://graphql.org/), [Nest](https://nestjs.com/) & [TypeScript](http://www.typescriptlang.org/), with a focus on developer productivity and ease of customization.
 
 [![Build Status](https://github.com/vendure-ecommerce/vendure/workflows/Build%20&%20Test/badge.svg)](https://github.com/vendure-ecommerce/vendure/actions) 
-![Publish & Install](https://github.com/vendure-ecommerce/vendure/workflows/Publish%20&%20Install/badge.svg)
-[![lerna](https://img.shields.io/badge/maintained%20with-lerna-cc00ff.svg)](https://lernajs.io/)
+[![Publish & Install](https://github.com/vendure-ecommerce/vendure/workflows/Publish%20&%20Install/badge.svg)](https://github.com/vendure-ecommerce/vendure/actions/workflows/publish_and_install.yml)
+[![Lerna](https://img.shields.io/badge/maintained%20with-lerna-cc00ff.svg)](https://lerna.js.org/)
 
-![vendure_github_banner (1)](https://github.com/vendure-ecommerce/vendure/assets/6275952/0e25b1c7-a648-44a1-ba00-60012f0e7aaa)
+![vendure-github-social-banner](https://github.com/vendure-ecommerce/vendure/assets/24294584/ada25fa3-185d-45ce-896d-bece3685a829)
 
 
 ### [www.vendure.io](https://www.vendure.io/)
 
-* [Getting Started](https://docs.vendure.io/getting-started/): Get Vendure up and running locally in a matter of minutes with a single command
+* [Getting Started](https://docs.vendure.io/guides/getting-started/installation/): Get Vendure up and running locally in a matter of minutes with a single command
 * [Live Demo](https://demo.vendure.io/)
-* [Vendure Discord](https://www.vendure.io/community) Join us on Discord for support and answers to your questions
+* [Vendure Discord](https://www.vendure.io/community): Join us on Discord for support and answers to your questions
 
 ## Branches
 
 - `master` - The latest stable release, currently the 2.x series.
 - `minor` - The next patch release, including new features
 - `major` - The next major release (v3.0)
-- `v1` - The 1.x series, which is no longer actively developed but may still receive critical fixes.
+- `v2.x` - The 2.x line, which will receive critical fixes until the end-of-life on 31.12.2024. The code in this branch is under the MIT license.
 
 ## Structure
 
@@ -30,7 +30,8 @@ This project is a monorepo managed with [Lerna](https://github.com/lerna/lerna).
 vendure/
 ├── docs/           # Documentation source
 ├── e2e-common/     # Shared config for package e2e tests
-├── packages/       # Source for the Vendure server, admin-ui & plugin packages
+├── license/        # License information & CLA signature log
+├── packages/       # Source for the Vendure server, admin-ui & core plugin packages
 ├── scripts/
     ├── changelog/  # Scripts used to generate the changelog based on the git history
     ├── codegen/    # Scripts used to generate TypeScript code from the GraphQL APIs
@@ -39,11 +40,13 @@ vendure/
 
 ## Development
 
-The following instructions are for those who want to develop the Vendure core framework or plugins (e.g. if you intend to make a pull request). For instructions on how to build a project *using* Vendure, please see the [Getting Started guide](https://www.vendure.io/docs/getting-started/).
+> [!IMPORTANT]
+> The following instructions are for those who want to develop the Vendure core framework or plugins (e.g. if you intend to make a pull request). For instructions on how to build a project *using* Vendure, please see the [Getting Started guide](https://docs.vendure.io/guides/getting-started/installation/).
+
 
 ### 1. Install top-level dependencies
 
-`yarn`
+`npm install`
 
 The root directory has a `package.json` which contains build-related dependencies for tasks including:
 
@@ -53,7 +56,7 @@ The root directory has a `package.json` which contains build-related dependencie
 
 ### 2. Build all packages
 
-`yarn build`
+`npm run build`
 
 Packages must be built (i.e. TypeScript compiled, admin ui app built, certain assets copied etc.) before being used.
 
@@ -70,7 +73,7 @@ Vendure uses [TypeORM](http://typeorm.io), and officially supports **MySQL**, **
 3. Populate mock data: 
    ```bash
     cd packages/dev-server
-    DB=<mysql|postgres|sqlite> yarn populate
+    DB=<mysql|postgres|sqlite> npm run populate
     ```
    If you do not specify the `DB` variable, it will default to "mysql".
 
@@ -78,11 +81,11 @@ Vendure uses [TypeORM](http://typeorm.io), and officially supports **MySQL**, **
 
 ```
 cd packages/dev-server
-DB=<mysql|postgres|sqlite> yarn start
+DB=<mysql|postgres|sqlite> npm run start
 ```
 Or if you are in the root package 
 ```
-DB=<mysql|postgres|sqlite> yarn dev-server:start
+DB=<mysql|postgres|sqlite> npm run dev-server:start
 ```
 If you do not specify the `DB` argument, it will default to "mysql".
 
@@ -91,7 +94,7 @@ If you do not specify the `DB` argument, it will default to "mysql".
 If you are making changes to the admin ui, you need to start the admin ui independent from the dev-server:
 
 1. `cd packages/admin-ui`
-2. `yarn start`
+2. `npm run start`
 3. Go to http://localhost:4200 and log in with "superadmin", "superadmin"
 
 This will auto restart when you make changes to the admin ui. You don't need this step when you just use the admin ui just
@@ -108,13 +111,13 @@ This example shows how to test changes to the `payments-plugin` package locally,
 ```shell
 # Terminal 1
 cd packages/payments-plugin
-yarn watch
+npm run watch
 ```
 :warning: If you are developing changes for the `core`package, you also need to watch the `common` package:
 ```shell
 # Terminal 1
 # Root of the project
-yarn watch:core-common
+npm run watch:core-common
 ```
 
 2. After the changes in your package are compiled you have to stop and restart the dev-server:
@@ -122,7 +125,7 @@ yarn watch:core-common
 ```shell
 # Terminal 2
 cd packages/dev-server
-DB=sqlite yarn start
+DB=sqlite npm run start
 ```
 
 3. The dev-server will now have your local changes from the changed package.
@@ -131,7 +134,7 @@ DB=sqlite yarn start
 
 [graphql-code-generator](https://github.com/dotansimha/graphql-code-generator) is used to automatically create TypeScript interfaces for all GraphQL server operations and admin ui queries. These generated interfaces are used in both the admin ui and the server.
 
-Running `yarn codegen` will generate the following files:
+Running `npm run codegen` will generate the following files:
 
 * [`packages/common/src/generated-types.ts`](./packages/common/src/generated-types.ts): Types, Inputs & resolver args relating to the Admin API
 * [`packages/common/src/generated-shop-types.ts`](./packages/common/src/generated-shop-types.ts): Types, Inputs & resolver args relating to the Shop API
@@ -143,31 +146,33 @@ Running `yarn codegen` will generate the following files:
 
 #### Server Unit Tests
 
-The core and several other packages have unit tests which are can be run all together by running `yarn test` from the root directory, or individually by running it from the package directory.
+The core and several other packages have unit tests which are can be run all together by running `npm run test` from the root directory, or individually by running it from the package directory.
 
 Unit tests are co-located with the files which they test, and have the suffix `.spec.ts`.
 
+If you're getting `Error: Bindings not found.`, please run `npm rebuild @swc/core`.
+
 #### End-to-end Tests
 
-Certain packages have e2e tests, which are located at `/packages/<name>/e2e/`. All e2e tests can be run by running `yarn e2e` from the root directory, or individually by running it from the package directory.
+Certain packages have e2e tests, which are located at `/packages/<name>/e2e/`. All e2e tests can be run by running `npm run e2e` from the root directory, or individually by running it from the package directory.
 
-e2e tests use the `@vendure/testing` package. For details of how the setup works, see the [Testing docs](https://www.vendure.io/docs/developer-guide/testing/)
+e2e tests use the `@vendure/testing` package. For details of how the setup works, see the [Testing docs](https://docs.vendure.io/guides/developer-guide/testing/).
 
 When **debugging e2e tests**, set an environment variable `E2E_DEBUG=true` which will increase the global Jest timeout and allow you to step through the e2e tests without the tests automatically failing due to timeout.
 
 ### Release Process
 
-All packages in this repo are released at every version change (using [Lerna's fixed mode](https://github.com/lerna/lerna#fixedlocked-mode-default)). This simplifies both the development (tracking multiple disparate versions is tough) and also the developer experience for users of the framework (it is simple to see that all packages are up-to-date and compatible).
+All packages in this repo are released at every version change (using [Lerna's fixed mode](https://lerna.js.org/docs/features/version-and-publish#fixedlocked-mode-default)). This simplifies both the development (tracking multiple disparate versions is tough) and also the developer experience for users of the framework (it is simple to see that all packages are up-to-date and compatible).
 
 To make a release:
 
-##### 1. `yarn publish-release`
+##### 1. `npm run publish-release`
 
 It will run `lerna publish` which will prompt for which version to update to. Although we are using [conventional commits](https://www.conventionalcommits.org), the version is not automatically being calculated from the commit messages. Therefore the next version should be manually selected. 
 
 Next it will build all packages to ensure the distributed files are up to date.
 
-Finally the command will create changelog entries for this release.
+Finally, the command will create changelog entries for this release.
 
 ##### 2. `git push origin master --follow-tags`
 
@@ -175,4 +180,4 @@ The reason we do not rely on Lerna to push the release to Git is that this repo 
 
 ## License
 
-MIT
+See [LICENSE.md](./LICENSE.md).

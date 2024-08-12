@@ -18,7 +18,6 @@ import { createRoutes } from './catalog.routes';
 import { ApplyFacetDialogComponent } from './components/apply-facet-dialog/apply-facet-dialog.component';
 import { AssetDetailComponent } from './components/asset-detail/asset-detail.component';
 import { AssetListComponent } from './components/asset-list/asset-list.component';
-import { AssetsComponent } from './components/assets/assets.component';
 import { AssignProductsToChannelDialogComponent } from './components/assign-products-to-channel-dialog/assign-products-to-channel-dialog.component';
 import { BulkAddFacetValuesDialogComponent } from './components/bulk-add-facet-values-dialog/bulk-add-facet-values-dialog.component';
 import { CollectionContentsComponent } from './components/collection-contents/collection-contents.component';
@@ -73,6 +72,7 @@ import { ProductVariantsEditorComponent } from './components/product-variants-ed
 import { ProductVariantsTableComponent } from './components/product-variants-table/product-variants-table.component';
 import { UpdateProductOptionDialogComponent } from './components/update-product-option-dialog/update-product-option-dialog.component';
 import { VariantPriceDetailComponent } from './components/variant-price-detail/variant-price-detail.component';
+import { VariantPriceStrategyDetailComponent } from './components/variant-price-strategy-detail/variant-price-strategy-detail.component';
 
 const CATALOG_COMPONENTS = [
     ProductListComponent,
@@ -82,8 +82,8 @@ const CATALOG_COMPONENTS = [
     GenerateProductVariantsComponent,
     ApplyFacetDialogComponent,
     AssetListComponent,
-    AssetsComponent,
     VariantPriceDetailComponent,
+    VariantPriceStrategyDetailComponent,
     CollectionListComponent,
     CollectionDetailComponent,
     CollectionTreeComponent,
@@ -132,23 +132,24 @@ export class CatalogModule {
         }
         bulkActionRegistryService.registerBulkAction(assignFacetValuesToProductsBulkAction);
         bulkActionRegistryService.registerBulkAction(assignProductsToChannelBulkAction);
-        bulkActionRegistryService.registerBulkAction(assignProductVariantsToChannelBulkAction);
-        bulkActionRegistryService.registerBulkAction(removeProductsFromChannelBulkAction);
-        bulkActionRegistryService.registerBulkAction(removeProductVariantsFromChannelBulkAction);
         bulkActionRegistryService.registerBulkAction(duplicateProductsBulkAction);
+        bulkActionRegistryService.registerBulkAction(removeProductsFromChannelBulkAction);
         bulkActionRegistryService.registerBulkAction(deleteProductsBulkAction);
-        bulkActionRegistryService.registerBulkAction(deleteProductVariantsBulkAction);
+
         bulkActionRegistryService.registerBulkAction(assignFacetValuesToProductVariantsBulkAction);
+        bulkActionRegistryService.registerBulkAction(assignProductVariantsToChannelBulkAction);
+        bulkActionRegistryService.registerBulkAction(removeProductVariantsFromChannelBulkAction);
+        bulkActionRegistryService.registerBulkAction(deleteProductVariantsBulkAction);
 
         bulkActionRegistryService.registerBulkAction(assignFacetsToChannelBulkAction);
-        bulkActionRegistryService.registerBulkAction(removeFacetsFromChannelBulkAction);
         bulkActionRegistryService.registerBulkAction(duplicateFacetsBulkAction);
+        bulkActionRegistryService.registerBulkAction(removeFacetsFromChannelBulkAction);
         bulkActionRegistryService.registerBulkAction(deleteFacetsBulkAction);
 
         bulkActionRegistryService.registerBulkAction(moveCollectionsBulkAction);
         bulkActionRegistryService.registerBulkAction(assignCollectionsToChannelBulkAction);
-        bulkActionRegistryService.registerBulkAction(removeCollectionsFromChannelBulkAction);
         bulkActionRegistryService.registerBulkAction(duplicateCollectionsBulkAction);
+        bulkActionRegistryService.registerBulkAction(removeCollectionsFromChannelBulkAction);
         bulkActionRegistryService.registerBulkAction(deleteCollectionsBulkAction);
 
         pageService.registerPageTab({
