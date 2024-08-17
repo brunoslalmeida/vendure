@@ -5887,6 +5887,7 @@ export type TestShippingMethodQuote = {
 export type TestShippingMethodResult = {
     eligible: Scalars['Boolean']['output'];
     quote?: Maybe<TestShippingMethodQuote>;
+    quotes?: Maybe<Array<TestShippingMethodQuote>>;
 };
 
 export type TextCustomFieldConfig = CustomField & {

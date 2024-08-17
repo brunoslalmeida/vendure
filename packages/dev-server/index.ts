@@ -1,6 +1,6 @@
 import { bootstrap, JobQueueService } from '@vendure/core';
 
-import { devConfig } from './dev-config';
+import { devConfig } from './dev-vendure-config';
 
 /**
  * This bootstraps the dev server, used for testing Vendure during development.

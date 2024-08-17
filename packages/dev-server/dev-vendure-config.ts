@@ -54,7 +54,8 @@ export const devConfig: VendureConfig = {
         },
     },
     shippingOptions:{
-        shippingCalculators: [defaultShippingCalculator]
+        shippingCalculators: [defaultShippingCalculator],
+        multipleQuotesPerShippingMethod: true,
     },
     dbConnectionOptions: {
         synchronize: false,
@@ -67,7 +68,7 @@ export const devConfig: VendureConfig = {
     },
 
     customFields: {},
-    logger: new DefaultLogger({ level: LogLevel.Verbose }),
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
     importExportOptions: {
         importAssetsDir: path.join(__dirname, 'import-assets'),
     },
