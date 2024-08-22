@@ -791,6 +791,11 @@ export interface ShippingOptions {
      * An array of available FulfillmentHandlers.
      */
     fulfillmentHandlers?: Array<FulfillmentHandler<any>>;
+    /**
+     * @description
+     * Feature flag to enable multiple quotes per shipping.
+     */
+    multipleQuotesPerShippingMethod?: boolean;
 }
 
 /**

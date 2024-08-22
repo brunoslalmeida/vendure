@@ -149,6 +149,9 @@ export const defaultConfig: RuntimeVendureConfig = {
         customFulfillmentProcess: [],
         process: [defaultFulfillmentProcess],
         fulfillmentHandlers: [manualFulfillmentHandler],
+        // FEATURE FLAG multipleQuotesPerShippingMethod BEGIN
+        multipleQuotesPerShippingMethod: false,
+        // FEATURE FLAG multipleQuotesPerShippingMethod END
     },
     orderOptions: {
         orderItemsLimit: 999,
