@@ -21,6 +21,8 @@ import { runEntityMetadataModifiers } from './entity/run-entity-metadata-modifie
 import { setEntityIdStrategy } from './entity/set-entity-id-strategy';
 import { setMoneyStrategy } from './entity/set-money-strategy';
 import { validateCustomFieldsConfig } from './entity/validate-custom-fields-config';
+import { FEATURE_FLAG } from './feature-flag';
+import { MultipleShippingQuotesFeatureFlag } from './feature-flag/multiple-shipping-quotes';
 import { getCompatibility, getConfigurationFunction, getEntitiesFromPlugins } from './plugin/plugin-metadata';
 import { getPluginStartupMessages } from './plugin/plugin-utils';
 import { setProcessContext } from './process-context/process-context';
@@ -233,6 +235,9 @@ export async function preBootstrapConfig(
         throw new Error('CustomFields config error:\n- ' + customFieldValidationResult.errors.join('\n- '));
     }
     registerCustomEntityFields(config);
+
+    FEATURE_FLAG[MultipleShippingQuotesFeatureFlag.code] = new MultipleShippingQuotesFeatureFlag(config);
+
     await runEntityMetadataModifiers(config);
     setExposedHeaders(config);
     return config;
