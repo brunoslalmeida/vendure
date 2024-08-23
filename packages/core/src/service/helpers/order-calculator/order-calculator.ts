@@ -324,8 +324,10 @@ export class OrderCalculator {
             }
             const currentMethodStillEligible = await currentShippingMethod.test(ctx, order);
             if (currentMethodStillEligible) {
-                const result = await currentShippingMethod.apply(ctx, order);
-                if (result) {
+                const _results = await currentShippingMethod.apply(ctx, order);
+                if (_results) {
+                    // TODO FIX HERE
+                    const result = Array.isArray(_results) ? _results[0] : _results;
                     shippingLine.listPrice = result.price;
                     shippingLine.listPriceIncludesTax = result.priceIncludesTax;
                     shippingLine.taxLines = [
@@ -337,6 +339,10 @@ export class OrderCalculator {
                 }
                 continue;
             }
+            // TODO CHECK HERE
+            // If shipping is not available it's important to select another shipping method
+            // how to select between the options and select the item from a shipping method
+            // with multiple quotes ?
             const results = await this.shippingCalculator.getEligibleShippingMethods(ctx, order, [
                 currentShippingMethod.id,
             ]);

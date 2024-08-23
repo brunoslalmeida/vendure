@@ -12,6 +12,7 @@ import { ID } from '@vendure/common/lib/shared-types';
 import { RequestContext } from '../../api/common/request-context';
 import { grossPriceOf, netPriceOf } from '../../common/tax-utils';
 import { ConfigService } from '../../config/config.service';
+import { ShippingCalculationResult } from '../../config/shipping-method/shipping-calculator';
 import { TransactionalConnection } from '../../connection/transactional-connection';
 import { Order } from '../../entity/order/order.entity';
 import { OrderLine } from '../../entity/order-line/order-line.entity';
@@ -59,21 +60,51 @@ export class OrderTestingService {
         const mockOrder = await this.buildMockOrder(ctx, input.shippingAddress, input.lines);
         const eligible = await shippingMethod.test(ctx, mockOrder);
         const result = eligible ? await shippingMethod.apply(ctx, mockOrder) : undefined;
-        let quote: TestShippingMethodQuote | undefined;
-        if (result) {
-            const { price, priceIncludesTax, taxRate, metadata } = result;
-            quote = {
-                price: priceIncludesTax ? netPriceOf(price, taxRate) : price,
-                priceWithTax: priceIncludesTax ? price : grossPriceOf(price, taxRate),
-                metadata,
-            };
-        }
+
+        const { quote, quotes } = this.getItemsResult(result);
+
         return {
-            eligible,
             quote,
+            quotes,
+            eligible,
         };
     }
 
+    private getItemsResult(results: ShippingCalculationResult[] | ShippingCalculationResult | undefined) {
+        if (!results) return { quote: undefined, quotes: undefined };
+
+        if (!Array.isArray(results)) {
+            const quote = this.getItemResult(results);
+            return { quote, quotes: quote ? [quote] : undefined };
+        }
+
+        const quotes: TestShippingMethodQuote[] = [];
+
+        results.forEach(result => {
+            const quote = this.getItemResult(result);
+            if (quote) quotes.push(quote);
+        });
+
+        if (quotes.length > 0) {
+            return { quote: quotes[0], quotes };
+        }
+
+        return { quote: undefined, quotes: undefined };
+    }
+
+    private getItemResult(
+        result: ShippingCalculationResult | undefined,
+    ): TestShippingMethodQuote | undefined {
+        if (!result) return undefined;
+
+        const { price, priceIncludesTax, taxRate, metadata } = result;
+        const quote = {
+            price: priceIncludesTax ? netPriceOf(price, taxRate) : price,
+            priceWithTax: priceIncludesTax ? price : grossPriceOf(price, taxRate),
+            metadata,
+        };
+        return quote;
+    }
     /**
      * @description
      * Tests all available ShippingMethods against a mock Order and return those which are eligible. This

@@ -8,11 +8,14 @@ import { ChannelAware, SoftDeletable } from '../../common/types/common-types';
 import { LocaleString, Translatable, Translation } from '../../common/types/locale-types';
 import { getConfig } from '../../config/config-helpers';
 import { HasCustomFields } from '../../config/custom-field/custom-field-types';
+import { Logger } from '../../config/logger/vendure-logger';
 import {
     ShippingCalculationResult,
     ShippingCalculator,
 } from '../../config/shipping-method/shipping-calculator';
 import { ShippingEligibilityChecker } from '../../config/shipping-method/shipping-eligibility-checker';
+import { IS_FEATURE_ENABLED } from '../../feature-flag';
+import { MultipleShippingQuotesFeatureFlag } from '../../feature-flag/multiple-shipping-quotes';
 import { VendureEntity } from '../base/base.entity';
 import { Channel } from '../channel/channel.entity';
 import { CustomShippingMethodFields } from '../custom-entity-fields';
@@ -72,20 +75,44 @@ export class ShippingMethod
     @Column(type => CustomShippingMethodFields)
     customFields: CustomShippingMethodFields;
 
-    async apply(ctx: RequestContext, order: Order): Promise<ShippingCalculationResult | undefined> {
+    async apply(
+        ctx: RequestContext,
+        order: Order,
+    ): Promise<ShippingCalculationResult | ShippingCalculationResult[] | undefined> {
         const calculator = this.allCalculators[this.calculator.code];
-        if (calculator) {
-            const response = await calculator.calculate(ctx, order, this.calculator.args, this);
-            if (response) {
-                const { price, priceIncludesTax, taxRate, metadata } = response;
-                return {
-                    price: roundMoney(price),
-                    priceIncludesTax,
-                    taxRate,
-                    metadata,
-                };
-            }
+        if (!calculator) {
+            return undefined;
         }
+
+        const response = await calculator.calculate(ctx, order, this.calculator.args, this);
+        if (!response) {
+            return undefined;
+        }
+
+        if (!Array.isArray(response)) {
+            return {
+                ...response,
+                price: roundMoney(response.price),
+            };
+        }
+
+        // FEATURE FLAG multipleQuotesPerShippingMethod BEGIN
+        if (!IS_FEATURE_ENABLED(MultipleShippingQuotesFeatureFlag.code)) {
+            Logger.warn(
+                `Calculator ${calculator.code} is returning and array but the Feature 
+                Flag multipleQuotesPerShippingMethod is disabled. If you desire to use 
+                multiple quotes per shipping method, please add 
+                multipleQuotesPerShippingMethod as true to shippingOptions at Vendure 
+                Config`,
+            );
+        }
+        // FEATURE FLAG multipleQuotesPerShippingMethod END
+
+        if (response.length === 0) return;
+        return (response as ShippingCalculationResult[]).map(e => ({
+            ...e,
+            price: roundMoney(e.price),
+        }));
     }
 
     async test(ctx: RequestContext, order: Order): Promise<boolean> {
