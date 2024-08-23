@@ -71,7 +71,8 @@ input TestShippingMethodOrderLineInput {
 
 type TestShippingMethodResult {
     eligible: Boolean!
-    quote: TestShippingMethodQuote
+    quote: TestShippingMethodQuote,
+    quotes: [TestShippingMethodQuote!]
 }
 
 type TestShippingMethodQuote {

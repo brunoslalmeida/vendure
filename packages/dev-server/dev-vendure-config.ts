@@ -21,6 +21,7 @@ import path from 'path';
 import { DataSourceOptions } from 'typeorm';
 
 import { MultivendorPlugin } from './example-plugins/multivendor-plugin/multivendor.plugin';
+import { defaultShippingCalculator } from './shipping/calculator';
 
 /**
  * Config settings used during development
@@ -52,6 +53,10 @@ export const devConfig: VendureConfig = {
             secret: 'abc',
         },
     },
+    shippingOptions:{
+        shippingCalculators: [defaultShippingCalculator],
+        multipleQuotesPerShippingMethod: true,
+    },
     dbConnectionOptions: {
         synchronize: false,
         logging: false,
@@ -63,7 +68,7 @@ export const devConfig: VendureConfig = {
     },
 
     customFields: {},
-    logger: new DefaultLogger({ level: LogLevel.Verbose }),
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
     importExportOptions: {
         importAssetsDir: path.join(__dirname, 'import-assets'),
     },
@@ -159,11 +164,11 @@ function getDbConfig(): DataSourceOptions {
             console.log('Using mysql connection');
             return {
                 synchronize: true,
-                type: 'mariadb',
+                type: 'mysql',
                 host: '127.0.0.1',
                 port: 3306,
                 username: 'root',
-                password: '',
+                password: 'root',
                 database: 'vendure-dev',
             };
     }

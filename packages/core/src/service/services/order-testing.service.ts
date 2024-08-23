@@ -23,6 +23,7 @@ import { OrderCalculator } from '../helpers/order-calculator/order-calculator';
 import { ProductPriceApplicator } from '../helpers/product-price-applicator/product-price-applicator';
 import { ShippingCalculator } from '../helpers/shipping-calculator/shipping-calculator';
 import { TranslatorService } from '../helpers/translator/translator.service';
+import { ShippingCalculationResult } from '../../config/shipping-method/shipping-calculator';
 
 /**
  * @description
@@ -59,21 +60,45 @@ export class OrderTestingService {
         const mockOrder = await this.buildMockOrder(ctx, input.shippingAddress, input.lines);
         const eligible = await shippingMethod.test(ctx, mockOrder);
         const result = eligible ? await shippingMethod.apply(ctx, mockOrder) : undefined;
-        let quote: TestShippingMethodQuote | undefined;
+
+        const { quote, quotes } = this.getItemsResult(result);
+
+        return {
+            quote,
+            quotes,
+            eligible,
+        };
+    }
+
+    private getItemsResult(results: ShippingCalculationResult[] | ShippingCalculationResult | undefined) {
+        if (results == undefined) return { quote: undefined, quotes: undefined };
+
+        
+        if (Array.isArray(results)) {
+            const quotes: TestShippingMethodQuote[] = [];
+            for (const i in results) {
+                const quote = this.getItemResult(results[i]);
+                if (quote) quotes.push(quote);
+            }
+
+            return { quote: quotes[0], quotes: quotes.length > 0 ? quotes : undefined };
+        }
+
+        const quote = this.getItemResult(results);
+        return { quote, quotes: quote ? [quote] : undefined };
+    }
+
+    private getItemResult(result: ShippingCalculationResult | undefined) {
         if (result) {
-            const { price, priceIncludesTax, taxRate, metadata } = result;
-            quote = {
+            const { price, priceIncludesTax, taxRate, metadata } = Array.isArray(result) ? result[0] : result;
+            const quote: TestShippingMethodQuote = {
                 price: priceIncludesTax ? netPriceOf(price, taxRate) : price,
                 priceWithTax: priceIncludesTax ? price : grossPriceOf(price, taxRate),
                 metadata,
             };
+            return quote;
         }
-        return {
-            eligible,
-            quote,
-        };
     }
-
     /**
      * @description
      * Tests all available ShippingMethods against a mock Order and return those which are eligible. This

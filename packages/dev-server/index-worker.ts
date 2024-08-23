@@ -1,6 +1,6 @@
 import { bootstrapWorker } from '@vendure/core';
 
-import { devConfig } from './dev-config';
+import { devConfig } from './dev-vendure-config';
 
 bootstrapWorker(devConfig)
     .then(worker => worker.startJobQueue())

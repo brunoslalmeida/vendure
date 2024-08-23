@@ -32,10 +32,20 @@ export class ShippingCalculator {
             method => !skipIds.includes(method.id),
         );
 
-        const checkEligibilityPromises = shippingMethods.map(method =>
-            this.checkEligibilityByShippingMethod(ctx, order, method),
-        );
-        const eligibleMethods = await Promise.all(checkEligibilityPromises);
+        const eligibleMethods:EligibleShippingMethod[] = [];
+
+        for (let i in shippingMethods){
+            const method = shippingMethods[i]
+            const eligibility = await this.checkEligibilityByShippingMethod(ctx, order, method);
+
+            if (eligibility){
+                if(Array.isArray(eligibility)){
+                    eligibleMethods.push(...eligibility)
+                }else{
+                    eligibleMethods.push(eligibility)
+                }
+            }
+        }
 
         return eligibleMethods.filter(notNullOrUndefined).sort((a, b) => a.result.price - b.result.price);
     }
@@ -58,11 +68,14 @@ export class ShippingCalculator {
         ctx: RequestContext,
         order: Order,
         method: ShippingMethod,
-    ): Promise<EligibleShippingMethod | undefined> {
+    ): Promise<EligibleShippingMethod | EligibleShippingMethod[] | undefined> {
         const eligible = await method.test(ctx, order);
         if (eligible) {
             const result = await method.apply(ctx, order);
             if (result) {
+                if (Array.isArray(result)) {
+                    return result.map(e => ({ method, result: e }));
+                }
                 return { method, result };
             }
         }
